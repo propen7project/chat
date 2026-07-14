@@ -2858,13 +2858,24 @@ export class TelegramAdapter
     return error instanceof Error && error.name === "AbortError";
   }
 
-  protected async sleep(delayMs: number): Promise<void> {
-    if (delayMs <= 0) {
+  protected async sleep(delayMs: number, signal?: AbortSignal): Promise<void> {
+    if (delayMs <= 0 || signal?.aborted) {
       return;
     }
 
     await new Promise<void>((resolve) => {
-      setTimeout(resolve, delayMs);
+      const timeoutId = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, delayMs);
+
+      const onAbort = () => {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      };
+
+      signal?.addEventListener("abort", onAbort, { once: true });
     });
   }
 
