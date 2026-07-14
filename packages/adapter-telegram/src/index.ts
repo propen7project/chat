@@ -2471,6 +2471,9 @@ export class TelegramAdapter
     return chat.username;
   }
 
+  private _mentionRegexUsername?: string;
+  private _mentionRegex?: RegExp;
+
   protected isBotMentioned(message: TelegramMessage, text: string): boolean {
     if (!text) {
       return false;
@@ -2504,8 +2507,17 @@ export class TelegramAdapter
       }
     }
 
-    const mentionRegex = new RegExp(`@${this.escapeRegex(username)}\\b`, "i");
+    const mentionRegex = this.getMentionRegex(username);
     return mentionRegex.test(text);
+  }
+
+  protected getMentionRegex(username: string): RegExp {
+    if (!this._mentionRegex || this._mentionRegexUsername !== username) {
+      this._mentionRegexUsername = username;
+      this._mentionRegex = new RegExp(`@${this.escapeRegex(username)}\\b`, "i");
+    }
+
+    return this._mentionRegex;
   }
 
   protected entityText(text: string, entity: TelegramMessageEntity): string {
